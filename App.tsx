@@ -1,10 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import { View, Text, StyleSheet, Button, ActivityIndicator } from 'react-native';
 
 export default function App(){
   const [ clima, setClima ] = useState(null);
   const [ carregando, setCarregando ] = useState(false);
   const [ erro, setErro ] = useState(null);
+
+  function descreverClima(codigo){
+    if(codigo === 0) return 'Céu limpo';
+
+    if([45, 48].includes(codigo)) {
+      return 'Neblina';
+    };
+
+    if([1, 2].includes(codigo)) {
+      return 'Parcialmente nublado';
+    };
+
+    if(codigo === 3) return 'Nublado';
+
+    if([51, 53, 61, 63, 65, 80, 81, 82].includes(codigo)) {
+      return 'Chuva';
+    };
+
+    if([95, 96, 99].includes(codigo)) {
+      return 'Tempestade';
+    };
+
+    return 'Condição variável';
+  }
 
   // assíncrona para não travar a requisição
   async function buscarClima() {
@@ -14,7 +38,7 @@ export default function App(){
       setErro(null);
       
       // ↓ busca os dados json da api
-      const resposta = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-23.2642&longitude=-47.2992&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=America%2FSao_Paulo');
+      const resposta = await fetch('https://api.open-meteo.com/v1/forecast?latitude=38.6848&longitude=-120.0656&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=America%2FSao_Paulo');
       
       if (!resposta.ok){
         throw new Error('Erro ao consultar a API');
@@ -34,6 +58,10 @@ export default function App(){
       setCarregando(false);
 
     }
+
+    useEffect(() => {
+      buscarClima
+    }, []);
   }
 
   return(
@@ -47,36 +75,61 @@ export default function App(){
         Itu - SP
       </Text>
 
+      {carregando && (
+        <ActivityIndicator
+          size='large'
+          color='#fff'
+          style={styles.loading}
+        />
+      )}
+
+      {erro && (
+        <Text style={styles.erro}>
+          {erro}
+        </Text>
+      )}
+
       // ↓ se clima tiver setado, então execute o método nos parênteses
       {clima && (
         <>
+          <Text style={styles.subtitulo}>Temperautura</Text>
           <Text style={styles.temperatura}>
-            {clima.temperature_2m}°C
+            {Math.round(clima.temperature_2m)}°C
           </Text>
 
-          <Text style={styles.medium}>
-            {clima.apparent_temperature}°C
+          <Text style={styles.cidade}>
+            {descreverClima(clima.weather_code)}
           </Text>
 
-          <Text style={styles.medium}>
-            {clima.relative_humidity_2m}%
-          </Text>
+          <View style={styles.infomacao}>
+            <Text style={styles.subtitulo}>Sensação Térmica</Text>
+            <Text style={styles.medium}>
+              {Math.round(clima.apparent_temperature)}°C
+            </Text>
 
-          <Text style={styles.medium}>
-            {clima.wind_speed_10m}km/h
-          </Text>
+            <Text style={styles.subtitulo}>Umidade relativa do ar</Text>
+            <Text style={styles.medium}>
+              {Math.round(clima.relative_humidity_2m)}%
+            </Text>
+
+            <Text style={styles.subtitulo}>Velocidade do ar</Text>
+            <Text style={styles.medium}>
+              {Math.round(clima.wind_speed_10m)}km/h
+            </Text>
+          </View>
         </>
       )}
       <Text style={styles.descricao}>
-       ↓ Consulte o clima da cidade ↓
+      ↓ Consulte o clima da cidade ↓
       </Text>
-
-      <Button
-        title='Atualizar clima'
-        onPress={buscarClima}
-        disabled={carregando}
-        color={'#ff82b4'}
-      />
+      <View style={styles.botao}>
+        <Button
+          title='Atualizar clima'
+          onPress={buscarClima}
+          disabled={carregando}
+          color={'#ff82b4'}
+        />
+      </View>
     </View>
   );
 };
@@ -87,35 +140,51 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
+  infomacao: {
+    marginTop: 40,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
   titulo: {
-    color: '#fff',
+    backgroundColor: '#ee669d',
+    color: '#ffbcd7',
     fontSize: 30,
     fontWeight: 'bold'
   },
-  cidade: {
+  subtitulo: {
     color: '#fff',
     fontSize: 20,
     fontWeight: 'bold',
-    marginTop: 30
+    marginTop: 20
+  },
+  cidade: {
+    color: '#fff',
+    fontSize: 25,
+    fontWeight: 'bold',
+    marginTop: 10
   },
   temperatura: {
     color: '#fff',
     fontSize: 70,
     fontWeight: 'bold',
-    marginTop: 20
+    marginTop: 5
   },
   medium: {
     color: '#fff',
-    fontSize: 50,
-    fontWeight: 'bold',
-    marginTop: 20
+    fontSize: 40,
+    marginTop: 5
   },
   descricao: {
-    color: '#fff',
+    color: '#ee669d',
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 20,
-    marginBottom: 10
+    marginBottom: 10,
+    borderRadius: 10
+  },
+  botao: {
+    marginTop: 40,
+    width: 200
   },
   erro: {
     color: '#ff8585',
